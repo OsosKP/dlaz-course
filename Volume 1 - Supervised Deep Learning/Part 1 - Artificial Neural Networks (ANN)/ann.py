@@ -1,14 +1,11 @@
 # Artificial Neural Network
 
 # 1 - Data Preprocessing
-# Importing the libraries
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# Importing the dataset
 dataset = pd.read_csv('Churn_Modelling.csv')
-# X = dataset.iloc[:, 3:13].values
 X = dataset.drop(columns=['RowNumber', 'CustomerId', 'Surname', 'Exited'])
 y = dataset['Exited']
 
@@ -93,17 +90,25 @@ new_prediction = probability > 0.5
 # Use a Keras wrapper that wraps this function into the Keras model
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import cross_val_score
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
 def build_classifier():
     classifier = Sequential()
+# Input layer and first hidden layer with dropout
     classifier.add(
             Dense(units=6,
                   kernel_initializer='uniform',
                   activation='relu',
                   input_dim=11))
+# Best to start with 10%. Go higher if still overfitting
+    classifier.add(Dropout(rate=0.1))
+# Second hidden layer with dropout
     classifier.add(
             Dense(units=6,
                   kernel_initializer='uniform',
                   activation='relu'))
+    classifier.add(Dropout(rate=0.1))
+# Output layer
     classifier.add(
             Dense(units=1,
                   kernel_initializer='uniform',
@@ -121,4 +126,53 @@ accuracies = cross_val_score(estimator=classifier, X=X_train,
 
 mean = accuracies.mean()
 variance = accuracies.std()
+
+# Tune hyperparameters using gridsearch
+from sklearn.model_selection import GridSearchCV
+def build_classifier(optimizer):
+    classifier = Sequential()
+# Input layer and first hidden layer with dropout
+    classifier.add(
+            Dense(units=6,
+                  kernel_initializer='uniform',
+                  activation='relu',
+                  input_dim=11))
+    classifier.add(Dropout(rate=0.1))
+# Second hidden layer with dropout
+    classifier.add(
+            Dense(units=6,
+                  kernel_initializer='uniform',
+                  activation='relu'))
+    classifier.add(Dropout(rate=0.1))
+# Output layer
+    classifier.add(
+            Dense(units=1,
+                  kernel_initializer='uniform',
+                  activation='sigmoid'))
+    classifier.compile(
+            optimizer=optimizer,
+            loss='binary_crossentropy',
+            metrics=['accuracy'])
+    return classifier
+
+# We're tuning batch size and number of epochs so don't specify them here
+classifier = KerasClassifier(build_fn=build_classifier)
+parameters = {'batch_size': [25, 32],
+              'epochs': [100, 500],
+              'optimizer': ['adam', 'rmsprop']}
+grid_search = GridSearchCV(estimator=classifier, param_grid=parameters,
+                           scoring='accuracy', cv=10)
+grid_search = grid_search.fit(X_train, y_train)
+best_parameters = grid_search.best_params_
+best_accuracy = grid_search.best_score_
+
+
+
+
+
+
+
+
+
+
 
