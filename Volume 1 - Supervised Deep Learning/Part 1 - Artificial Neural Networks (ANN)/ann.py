@@ -88,8 +88,7 @@ scaled_example = sc_X.transform(example)
 probability = classifier.predict(scaled_example)
 new_prediction = probability > 0.5
 
-# 4 - Tuning the ANN
-# Evaluation
+# 4 - Evaluating and Tuning the ANN
 # K-fold is part of sklearn, not Keras -> need to combine
 # Use a Keras wrapper that wraps this function into the Keras model
 from keras.wrappers.scikit_learn import KerasClassifier
@@ -120,6 +119,6 @@ classifier = KerasClassifier(build_fn=build_classifier,
 accuracies = cross_val_score(estimator=classifier, X=X_train,
                              y=y_train, cv=10, n_jobs=-1)
 
-
-
+mean = accuracies.mean()
+variance = accuracies.std()
 
