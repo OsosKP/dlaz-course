@@ -2,35 +2,33 @@
 
 # 1 - Data Preprocessing
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
+from keras.layers import Dense, Dropout
+from keras.models import Sequential
+from keras.wrappers.scikit_learn import KerasClassifier
+from sklearn.model_selection import GridSearchCV, cross_val_score, train_test_split
+from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import StandardScaler
 
 dataset = pd.read_csv('Churn_Modelling.csv')
 X = dataset.drop(columns=['RowNumber', 'CustomerId', 'Surname', 'Exited'])
 y = dataset['Exited']
 
 # Encode categorical data
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from sklearn.compose import ColumnTransformer
 
 X = pd.get_dummies(X, columns=['Geography', 'Gender'], drop_first=True)
 
 # Split into training and test sets
-from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=0)
 
 # Feature Scaling
-from sklearn.preprocessing import StandardScaler
 sc_X = StandardScaler()
 # Fit/transform to training first so test is based on the same thing
 X_train = sc_X.fit_transform(X_train)
 X_test = sc_X.transform(X_test)
 
 # 2 - Making the ANN
-import keras
-from keras.models import Sequential
-from keras.layers import Dense
 
 # Initializing the ANN
 classifier = Sequential()
@@ -38,31 +36,31 @@ classifier = Sequential()
 # Adding input layer and first hidden layer
 # Units: hidden nodes -> inputs + outputs divided by 2
 classifier.add(
-        Dense(units=6,
-              kernel_initializer='uniform',
-              activation='relu',
-              input_dim=11))
+    Dense(units=6,
+          kernel_initializer='uniform',
+          activation='relu',
+          input_dim=11))
 
 # Adding the second hidden layer
 classifier.add(
-        Dense(units=6,
-              kernel_initializer='uniform',
-              activation='relu'))
+    Dense(units=6,
+          kernel_initializer='uniform',
+          activation='relu'))
 
 # Adding the output layer
 # If our dependent variable had >2 categories, we would use softmax over sigmoid
 classifier.add(
-        Dense(units=1,
-              kernel_initializer='uniform',
-              activation='sigmoid'))
+    Dense(units=1,
+          kernel_initializer='uniform',
+          activation='sigmoid'))
 
 # Compiling the ANN
 # 'adam' is an algorithm for stochastic gradient descent
 # If output isn't binary, loss='categorical_crossentropy'
 classifier.compile(
-        optimizer='adam',
-        loss='binary_crossentropy',
-        metrics=['accuracy'])
+    optimizer='adam',
+    loss='binary_crossentropy',
+    metrics=['accuracy'])
 
 # Fitting the ANN to the training set
 classifier.fit(x=X_train, y=y_train, batch_size=10, epochs=100)
@@ -76,7 +74,6 @@ y_pred = classifier.predict(X_test)
 y_pred = (y_pred > 0.5)
 
 # Making the confusion matrix
-from sklearn.metrics import confusion_matrix
 cm = confusion_matrix(y_test, y_pred)
 
 # Test model on new example
@@ -88,36 +85,34 @@ new_prediction = probability > 0.5
 # 4 - Evaluating and Tuning the ANN
 # K-fold is part of sklearn, not Keras -> need to combine
 # Use a Keras wrapper that wraps this function into the Keras model
-from keras.wrappers.scikit_learn import KerasClassifier
-from sklearn.model_selection import cross_val_score
-from keras.models import Sequential
-from keras.layers import Dense, Dropout
+
 def build_classifier():
-    classifier = Sequential()
+    ann_classifier = Sequential()
 # Input layer and first hidden layer with dropout
-    classifier.add(
-            Dense(units=6,
-                  kernel_initializer='uniform',
-                  activation='relu',
-                  input_dim=11))
+    ann_classifier.add(
+        Dense(units=6,
+              kernel_initializer='uniform',
+              activation='relu',
+              input_dim=11))
 # Best to start with 10%. Go higher if still overfitting
-    classifier.add(Dropout(rate=0.1))
+    ann_classifier.add(Dropout(rate=0.1))
 # Second hidden layer with dropout
-    classifier.add(
-            Dense(units=6,
-                  kernel_initializer='uniform',
-                  activation='relu'))
-    classifier.add(Dropout(rate=0.1))
+    ann_classifier.add(
+        Dense(units=6,
+              kernel_initializer='uniform',
+              activation='relu'))
+    ann_classifier.add(Dropout(rate=0.1))
 # Output layer
-    classifier.add(
-            Dense(units=1,
-                  kernel_initializer='uniform',
-                  activation='sigmoid'))
-    classifier.compile(
-            optimizer='adam',
-            loss='binary_crossentropy',
-            metrics=['accuracy'])
-    return classifier
+    ann_classifier.add(
+        Dense(units=1,
+              kernel_initializer='uniform',
+              activation='sigmoid'))
+    ann_classifier.compile(
+        optimizer='adam',
+        loss='binary_crossentropy',
+        metrics=['accuracy'])
+    return ann_classifier
+
 
 classifier = KerasClassifier(build_fn=build_classifier,
                              batch_size=10, epochs=100)
@@ -127,33 +122,32 @@ accuracies = cross_val_score(estimator=classifier, X=X_train,
 mean = accuracies.mean()
 variance = accuracies.std()
 
-# Tune hyperparameters using gridsearch
-from sklearn.model_selection import GridSearchCV
-def build_classifier(optimizer):
-    classifier = Sequential()
+def build_classifier_dropout(optimizer):
+    ann_classifier = Sequential()
 # Input layer and first hidden layer with dropout
-    classifier.add(
-            Dense(units=6,
-                  kernel_initializer='uniform',
-                  activation='relu',
-                  input_dim=11))
-    classifier.add(Dropout(rate=0.1))
+    ann_classifier.add(
+        Dense(units=6,
+              kernel_initializer='uniform',
+              activation='relu',
+              input_dim=11))
+    ann_classifier.add(Dropout(rate=0.1))
 # Second hidden layer with dropout
-    classifier.add(
-            Dense(units=6,
-                  kernel_initializer='uniform',
-                  activation='relu'))
-    classifier.add(Dropout(rate=0.1))
+    ann_classifier.add(
+        Dense(units=6,
+              kernel_initializer='uniform',
+              activation='relu'))
+    ann_classifier.add(Dropout(rate=0.1))
 # Output layer
-    classifier.add(
-            Dense(units=1,
-                  kernel_initializer='uniform',
-                  activation='sigmoid'))
-    classifier.compile(
-            optimizer=optimizer,
-            loss='binary_crossentropy',
-            metrics=['accuracy'])
-    return classifier
+    ann_classifier.add(
+        Dense(units=1,
+              kernel_initializer='uniform',
+              activation='sigmoid'))
+    ann_classifier.compile(
+        optimizer=optimizer,
+        loss='binary_crossentropy',
+        metrics=['accuracy'])
+    return ann_classifier
+
 
 # We're tuning batch size and number of epochs so don't specify them here
 classifier = KerasClassifier(build_fn=build_classifier)
@@ -165,14 +159,3 @@ grid_search = GridSearchCV(estimator=classifier, param_grid=parameters,
 grid_search = grid_search.fit(X_train, y_train)
 best_parameters = grid_search.best_params_
 best_accuracy = grid_search.best_score_
-
-
-
-
-
-
-
-
-
-
-
